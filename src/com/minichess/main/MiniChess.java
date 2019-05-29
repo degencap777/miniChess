@@ -1,7 +1,7 @@
 package com.minichess.main;
 
-/* MiniChess v0.5
- * 	Minimax Chess AI implemented in Java.
+/* MiniChess v1.0
+ * 	Minimax Chess AI with alpha-beta pruning implemented in Java.
  * 	Created by Ryan Danver 5/17/19. ~*~
  */
 
@@ -10,67 +10,73 @@ import com.github.bhlangonijr.chesslib.*;
 import com.github.bhlangonijr.chesslib.move.*;
 
 public class MiniChess {
-	static Board board = new Board();
+	static Board board;
+	static int move, depth;
 	public static void main(String[] args) {
+		board = new Board();
 		Scanner sc = new Scanner(System.in);
-		int depth;
+		move = 1;
 		
-		// For UNIX machines:
-		System.out.println("\033[H\033[2J");
+		System.out.print("\033[H\033[2J");
 		System.out.flush();
-		
 		System.out.print("MiniChess AI\n"
 				+ "Created by Ryan Danver 2019\n"
 				+ "Type \"!\" to view the board.\n");
 		
 		// TODO: Implement the ability to change the computer's side/color
 		// boolean color = true;
-		/*System.out.println("\nBlack (false) or White (true): ");
-		color = sc.nextBoolean();*/
+		// System.out.print("\nBlack (false) or White (true): ");
+		// side = sc.nextBoolean();
 		
 		System.out.print("\nEnter search depth: ");
 		depth = sc.nextInt();
 		if(!(depth > 1)) { 
-			System.err.println("Depth must be larger than 1.");
+			System.out.println("Depth must be larger than 1.");
 			return;
 		}
 		sc = new Scanner(System.in);
 		
 		/* Interactive Interpreter */
 		for(;;) {
+			System.out.print("\u001b[0m");
 			checkBoard();
-			System.out.print(">> ");
+			System.out.println("\nmove: " + move);
+			System.out.print(">> \u001b[31;1m");
 			try { 
-				Evaluator.eval(sc.nextLine(),depth);
+				Evaluator.eval(sc.nextLine(), depth);
 			} catch (MoveGeneratorException e) {
-				e.printStackTrace(); 
+				e.printStackTrace();
 			}
 		}
 	}
 	/* Print the board to the console. */
-	// TODO: Currently, the board is printed inverted. Fix this.
 	public static void printBoard() {
+		System.out.println("\u001b[32;1m");
 		Piece[] pieces = board.boardToArray();
-		for(int i = pieces.length - 2; i >= 0; i--) {
-			System.out.print(" : ");
-			switch(pieces[i]) {
-			default: System.out.print(" "); break;
-			case WHITE_PAWN: System.out.print("P"); break;
-			case WHITE_KNIGHT: System.out.print("N"); break;
-			case WHITE_BISHOP: System.out.print("B"); break;
-			case WHITE_ROOK: System.out.print("R"); break;
-			case WHITE_QUEEN: System.out.print("Q"); break;
-			case WHITE_KING: System.out.print("K"); break;
-			case BLACK_PAWN: System.out.print("p"); break;
-			case BLACK_KNIGHT: System.out.print("n"); break;
-			case BLACK_BISHOP: System.out.print("b"); break;
-			case BLACK_ROOK: System.out.print("r"); break;
-			case BLACK_QUEEN: System.out.print("q"); break;
-			case BLACK_KING: System.out.print("k"); break;
+		for(int i = 0; i < pieces.length; i++) {
+			boolean side;
+			if(pieces[i].getPieceSide() == Side.WHITE) side = true;
+			else side = false;
+			
+			if(i % 8 == 0 && i != 0) 
+				System.out.print(" :\n");
+			if(i != pieces.length - 1) 
+				System.out.print(" : ");
+			if(pieces[i].getPieceType() == null) 
+				System.out.print(" ");
+			else {
+				switch(pieces[i].getPieceType()) {
+				default: break;
+				case PAWN: if(side) System.out.print("P"); else System.out.print("p"); break;
+				case KNIGHT: if(side) System.out.print("N"); else System.out.print("n"); break;
+				case BISHOP: if(side) System.out.print("B"); else System.out.print("b"); break;
+				case ROOK: if(side) System.out.print("R"); else System.out.print("r"); break;
+				case QUEEN: if(side) System.out.print("Q"); else System.out.print("q"); break;
+				case KING: if(side) System.out.print("K"); else System.out.print("k"); break;
+				}
 			}
-			if(i % 8 == 0) System.out.print(" :\n");
 		}
-		System.out.print("\n");
+		System.out.print("\u001b[0m");
 	}
 	public static void checkBoard() {
 		if(board.isDraw()) endGame("draw");
