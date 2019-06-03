@@ -1,5 +1,8 @@
 package com.minichess.main;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.Side;
@@ -7,13 +10,16 @@ import com.github.bhlangonijr.chesslib.Square;
 import com.github.bhlangonijr.chesslib.move.*;
 
 /* The Evaluator Class.
- * 	Evaluate the given position, and decides
+ * 	Evaluates the current position, and decides
  * 	the computer's move.
  */
 public class Evaluator {
 	static int pInfinity, nInfinity;
 	static int posNum, pruneNum;
+	static String token;
 	public static void eval(String in, int depth) throws MoveGeneratorException {
+		System.out.print("\u001b[0m");
+		
 		Move givenMove;
 		MoveList moves = MoveGenerator.generateLegalMoves(MiniChess.board);
 		boolean isLegal = false;
@@ -21,28 +27,67 @@ public class Evaluator {
 		nInfinity = (int) Double.NEGATIVE_INFINITY;
 		posNum = 0;
 		pruneNum = 0;
-		
-		/* Parsing Input */
-		// TODO: Still need to add some more error-handling.
+		token = "";
 		char[] input = in.toCharArray();
 		boolean nextSquare = false;
+		boolean isCommand = false;
 		Square[] squares = new Square[2];
+		
+		/* Parsing the input */
 		for (int i = 0; i < input.length; i++) {
-			if(input[i] == '!') {
-				MiniChess.printBoard();
-				return;
+			token+=input[i];
+			if(input[i] == '/') {
+				isCommand = true;
+				token = "";
 			}
-			if(i != input.length - 1) {
-				if (input[i] == '-') nextSquare = true;
-				if (Character.isAlphabetic(input[i])) {
-					if (!nextSquare) 
-						squares[0] = Square.valueOf(formatMove(input, i));
-					else 
-						squares[1] = Square.valueOf(formatMove(input, i));
+			if(isCommand) {
+				String param = getParam(input, i);
+				switch(token) {
+				default: break;
+				case "printBoard": MiniChess.printBoard(); break;
+				case "setDepth":MiniChess.depth = Integer.parseInt(param); break;
+				case "exit": System.exit(1); break;
+				case "save":
+					try {
+						MiniChess.saveBoard(param);
+					} catch (IOException e) {
+						System.out.println("Could not create file.");
+					}
+					break;
+				case "load":
+					try {
+						MiniChess.loadBoard(param);
+					} catch (FileNotFoundException e) {
+						System.out.println("Could not find file.");
+					}
+					break;
+				case "version":
+					System.out.println("MiniChess AI v2.0 Created 5/17/19\n\n"
+							+ "Credits:\n"
+							+ " | MiniChess v2.0 - Copyright (C) 2019 Ryan Danver\n"
+							+ " | chesslib - Copyright 2017 Ben-Hur Carlos Vieira Langoni Junior");
+					break;
+				case "cmds":
+					System.out.println("List of all commands:\n"
+							+ " | /save [name] - Saves the current board state to a file.\n"
+							+ " | /load [name] - Loads board state from file.\n"
+							+ " | /setDepth [depth] - Sets the search depth for the minimax tree.\n"
+							+ " | /printBoard - Prints a representation of the current board.\n"
+							+ " | /exit - Exits the program."
+							+ " | /cmds - Prints all commands.\n"
+							+ " | /version - Prints version and credits.");
+					break;
+				}
+			} else {
+				if(Character.isAlphabetic(input[i])) {
+					squares[(nextSquare) ? 1 : 0] = Square.valueOf(formatMove(input, i));
+					nextSquare = !nextSquare;
 				}
 			}
 		}
+		if(isCommand) return;
 		givenMove = new Move(squares[0], squares[1]);
+		
 		/* Determining whether the player's move was legal. If so, update the board. */
 		for (Move m : moves)
 			if (m.equals(givenMove))
@@ -56,7 +101,7 @@ public class Evaluator {
 	}
 	
 	/* Deciding, and applying the computer's move. */
-	private static void makeComputerMove(MoveList moves, int depth) throws MoveGeneratorException {
+	public static void makeComputerMove(MoveList moves, int depth) throws MoveGeneratorException {
 		moves = MoveGenerator.generateLegalMoves(MiniChess.board);
 		Move cMove = rootMiniMax(true,depth);
 		MiniChess.board.doMove(cMove);
@@ -69,8 +114,9 @@ public class Evaluator {
 	/* Minimax algorithm with alpha-beta pruning.
 	 * 	For more information, go to https://en.wikipedia.org/wiki/Minimax.
 	 */
+	
 	/* For the root node. */
-	private static Move rootMiniMax(boolean maximizing, int depth) throws MoveGeneratorException {
+	public static Move rootMiniMax(boolean maximizing, int depth) throws MoveGeneratorException {
 		Move bestMove = null;
 		MoveList newMoves = MoveGenerator.generateLegalMoves(MiniChess.board);
 		int bestValue = (int) Double.NEGATIVE_INFINITY;
@@ -87,7 +133,7 @@ public class Evaluator {
 	}
 	
 	/* For all child nodes. */
-	private static int miniMax(boolean maximizing, int depth, int alpha, int beta) throws MoveGeneratorException {
+	public static int miniMax(boolean maximizing, int depth, int alpha, int beta) throws MoveGeneratorException {
 		posNum++;
 		if(depth == 0) 
 			return -getBoardValue(MiniChess.board);
@@ -105,7 +151,6 @@ public class Evaluator {
 					break;
 				}
 			}
-			
 			return bestValue;
 		} else {
 			int bestValue = pInfinity;
@@ -125,7 +170,7 @@ public class Evaluator {
 	}
 
 	/* Get the total board value */
-	private static int getBoardValue(Board b) {
+	public static int getBoardValue(Board b) {
 		int value = 0;
 		for (Piece p : b.boardToArray()) {
 			value += getPieceValue(p);
@@ -134,7 +179,7 @@ public class Evaluator {
 	}
 
 	/* Get the value for one piece */
-	private static int getPieceValue(Piece p) {
+	public static int getPieceValue(Piece p) {
 		boolean side = false;
 		if(p.getPieceSide() == Side.WHITE) side = true;
 		
@@ -151,7 +196,18 @@ public class Evaluator {
 		} else return 0;
 	}
 	
-	private static String formatMove(char[] chars, int index) {
+	/* Functions for parser */
+	public static String getParam(char[] chars, int index) {
+		String command = "";
+		for(int i = index + 1; i < chars.length; i++) {
+			if(chars[i] == '\n') break;
+			else if(chars[i] != ' ')
+				command+=chars[i];
+		}
+		return command;
+	}
+	
+	public static String formatMove(char[] chars, int index) {
 		return Character.toString(Character.toUpperCase(chars[index]))
 				+ Character.toString(Character.toUpperCase(chars[index + 1]));
 	}
