@@ -1,11 +1,16 @@
 package com.minichess.main;
 
-/* MiniChess v1.0
+/* MiniChess v2.0
  * 	Minimax Chess AI with alpha-beta pruning implemented in Java.
- * 	Created by Ryan Danver 5/17/19. ~*~
+ * 	Go to my website: visual-mov.com
+ * 
+ * 	Copyright (C) 2019 Ryan Danver ~*~
  */
 
 import java.util.Scanner;
+import java.io.*;
+import java.io.File;
+
 import com.github.bhlangonijr.chesslib.*;
 import com.github.bhlangonijr.chesslib.move.*;
 
@@ -19,36 +24,36 @@ public class MiniChess {
 		
 		System.out.print("\033[H\033[2J");
 		System.out.flush();
-		System.out.print("MiniChess AI\n"
-				+ "Created by Ryan Danver 2019\n"
-				+ "Type \"!\" to view the board.\n");
+		System.out.print("MiniChess AI v2.0\n"
+				+ "Copyright (C) 2019 Ryan Danver\n"
+				+ "Type \"/cmds\" to view all commands.\n");
 		
 		// TODO: Implement the ability to change the computer's side/color
-		// boolean color = true;
+		// boolean side = true;
 		// System.out.print("\nBlack (false) or White (true): ");
 		// side = sc.nextBoolean();
 		
-		System.out.print("\nEnter search depth: ");
+		System.out.print("\nEnter initial search depth: ");
 		depth = sc.nextInt();
-		if(!(depth > 1)) { 
-			System.out.println("Depth must be larger than 1.");
-			return;
-		}
 		sc = new Scanner(System.in);
-		
 		/* Interactive Interpreter */
 		for(;;) {
-			System.out.print("\u001b[0m");
+			if(depth <= 1) { 
+				System.out.println("Depth must be larger than 1.");
+				System.exit(1);
+			}
 			checkBoard();
+			System.out.print("\u001b[0m");
 			System.out.println("\nmove: " + move);
 			System.out.print(">> \u001b[31;1m");
 			try { 
 				Evaluator.eval(sc.nextLine(), depth);
 			} catch (MoveGeneratorException e) {
-				e.printStackTrace();
+				System.out.println("Error generating moves.");
 			}
 		}
 	}
+	// TODO: The board is mirrored. Fix this.
 	/* Print the board to the console. */
 	public static void printBoard() {
 		System.out.println("\u001b[32;1m");
@@ -78,6 +83,7 @@ public class MiniChess {
 		}
 		System.out.print("\u001b[0m");
 	}
+	/* Checks if the game has ended. */
 	public static void checkBoard() {
 		if(board.isDraw()) endGame("draw");
 		else if(board.isMated()) endGame("checkmate");
@@ -86,5 +92,34 @@ public class MiniChess {
 	public static void endGame(String cause) {
 		System.out.println("The game has ended. It's a " + cause + ".");
 		System.exit(0);
+	}
+	
+	/* Saves the current state of the board to a file. */
+	public static void saveBoard(String name) throws IOException {
+		File file = new File(name);
+		if(file.createNewFile()) System.out.println("Board saved.");
+		else System.out.println("Couldn't save board.");
+		
+		FileWriter writer = new FileWriter(file);
+		Piece[] pieces = board.boardToArray();
+		for(int i = 0; i < pieces.length; i++)
+			if(i != pieces.length - 1)
+				writer.write(pieces[i].toString() + "\r\n");
+		writer.close();
+	}
+	
+	/* Reads board state from file */
+	public static void loadBoard(String path) throws FileNotFoundException {
+		move = 1;
+		Scanner sc = new Scanner(new File(path));
+		int index = 0;
+		board.clear();
+		while(sc.hasNextLine()) {
+			Piece piece = Piece.valueOf(sc.nextLine());
+			if(piece != Piece.NONE)
+				board.setPiece(piece, Square.squareAt(index));
+			index++;
+		}
+		sc.close();
 	}
 }
