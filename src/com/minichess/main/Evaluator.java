@@ -73,8 +73,8 @@ public class Evaluator {
 					catch (FileNotFoundException e) { System.out.println("Could not find file."); }
 					break;
 				case "version":
-					System.out.println("MiniChess AI v2.0 Created 5/17/19\n\n" + "Credits:\n"
-							+ " | MiniChess v2.0 - Copyright (C) 2019 Ryan Danver\n"
+					System.out.println("MiniChess AI v2.5 Created 5/17/19\n\n" + "Credits:\n"
+							+ " | MiniChess v2.5 - Copyright (C) 2019 Ryan Danver\n"
 							+ " | chesslib - Copyright 2017 Ben-Hur Carlos Vieira Langoni Junior");
 					break;
 				case "cmds":
