@@ -146,7 +146,7 @@ public class Evaluator {
 		MiniChess.board.doMove(cMove);
 		
 		if(printOnMove) MiniChess.printBoard();
-		System.out.println("\\u001b[0m\nmove: " + MiniChess.move);
+		System.out.println("\nmove: " + MiniChess.move);
 		System.out.println(" | Elapsed time: " + elapsedTime + "ms.");
 		System.out.println(" | Positions evaled: " + posNum);
 		System.out.println(" | Positions pruned: " + pruneNum);
