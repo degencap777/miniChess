@@ -1,5 +1,5 @@
 # MiniChess v.2.6
-![Console Output](console.jpg)
+![Console Output](output.jpg)
 
 MiniChess is a chess AI program that uses the minimax algorithm with alpha-beta pruning. You play as white, and MiniChess is black. Make your move by entering the two squares (e.g `>>f2f4`). Once entered, MiniChess will return it's decided move, in addition to the time (in milliseconds) it took, the amount of positions evaluated, and pruned.
 
