@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Piece;
+import com.github.bhlangonijr.chesslib.Rank;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 import com.github.bhlangonijr.chesslib.move.*;
@@ -15,20 +16,22 @@ import com.github.bhlangonijr.chesslib.move.*;
  */
 
 public class Evaluator {
-	static int pInfinity, nInfinity;
 	static int posNum, pruneNum;
 	static String token;
 	static boolean initDepth = false;
+	static boolean printOnMove = false;
+	static int pInfinity,nInfinity;
 
 	public static void eval(String in, int depth) throws MoveGeneratorException, Exception  {
 		System.out.print("\u001b[0m");
 		Move givenMove;
 		MoveList moves = MoveGenerator.generateLegalMoves(MiniChess.board);
 		boolean isLegal = false;
-		pInfinity = (int) Double.POSITIVE_INFINITY;
-		nInfinity = (int) Double.NEGATIVE_INFINITY;
 		posNum = 0;
 		pruneNum = 0;
+		pInfinity = (int) Double.POSITIVE_INFINITY;
+		nInfinity = (int) Double.NEGATIVE_INFINITY;
+		
 		
 		token = "";
 		char[] input = in.toCharArray();
@@ -49,12 +52,8 @@ public class Evaluator {
 				default: break;
 				case "printboard": MiniChess.printBoard(); break;
 				case "exit": System.exit(1); break;
-				case "resetgame":
-					System.out.print("\033[2JGame reset.\n");
-					MiniChess.board = new Board();
-					MiniChess.move = 1;
-					initDepth = false;
-					break;
+				case "resetgame": MiniChess.resetGame(); break;
+				case "alwaysprint": printOnMove = (Boolean.parseBoolean(param)) ? true : false; break;
 				case "setdepth":
 					try {
 						initDepth = true;
@@ -72,19 +71,31 @@ public class Evaluator {
 					try {MiniChess.loadBoard(param);} 
 					catch (FileNotFoundException e) { System.out.println("Could not find file."); }
 					break;
+				case "fen":
+					if(initDepth) {
+						MiniChess.resetGame();
+						MiniChess.board.loadFromFen(param);
+						if(MiniChess.board.getSideToMove() == Side.BLACK) {
+							makeComputerMove(moves,depth);
+							return;
+						}
+					}
+					break;
 				case "version":
-					System.out.println("MiniChess AI v2.5 Created 5/17/19\n\n" + "Credits:\n"
-							+ " | MiniChess v2.5 - Copyright (C) 2019 Ryan Danver\n"
+					System.out.println("MiniChess AI v2.6 Created 5/17/19\n\n" + "Credits:\n"
+							+ " | MiniChess v2.6 - Copyright (C) 2019 Ryan Danver\n"
 							+ " | chesslib - Copyright 2017 Ben-Hur Carlos Vieira Langoni Junior");
 					break;
 				case "cmds":
 					System.out.println(
 							"List of all commands:\n" 
-									+ " | /save [name] - Saves the current board state to a file.\n"
-									+ " | /load [name] - Loads board state from file.\n"
+									+ " | /save [path] - Saves the current board state to a file.\n"
+									+ " | /load [path] - Loads board state from file.\n"
+									+ " | /fen [string] - Loads board state from a FEN string.\n"
 									+ " | /setdepth [depth] - Sets the search depth for the minimax tree.\n"
 									+ " | /printboard - Prints a representation of the current board.\n"
-									+ " | /resetgame - Resets the board, move counter, and depth.\n"
+									+ " | /resetgame - Clears the console, and resets the board and move counter.\n"
+									+ " | /alwaysprint [boolean] - Sets whether to print the board on every move.\n"
 									+ " | /exit - Exits the program.\n" 
 									+ " | /cmds - Prints all commands.\n"
 									+ " | /version - Prints version and credits.");
@@ -97,8 +108,12 @@ public class Evaluator {
 				}
 			}
 		}
-		if (isCommand) return;	
-		givenMove = new Move(squares[0], squares[1]);
+		if (isCommand) return;
+		
+		if(squares[1].getRank() == Rank.RANK_8 && MiniChess.board.getPiece(squares[0]) == Piece.WHITE_PAWN) 
+			givenMove = new Move(squares[0], squares[1],Piece.WHITE_QUEEN);
+		else
+			givenMove = new Move(squares[0], squares[1]);
 		
 		/* Checks for depth. */
 		if(!initDepth) {
@@ -125,11 +140,18 @@ public class Evaluator {
 	/* Deciding, and applying the computer's move. */
 	public static void makeComputerMove(MoveList moves, int depth) throws MoveGeneratorException {
 		moves = MoveGenerator.generateLegalMoves(MiniChess.board);
+		long curTime = System.currentTimeMillis();
 		Move cMove = rootMiniMax(true, depth);
+		long elapsedTime = System.currentTimeMillis() - curTime;
 		MiniChess.board.doMove(cMove);
-		System.out.println("\u001b[0m | Positions evaled: " + posNum);
+		
+		if(printOnMove) MiniChess.printBoard();
+		System.out.println("\\u001b[0m\nmove: " + MiniChess.move);
+		System.out.println(" | Elapsed time: " + elapsedTime + "ms.");
+		System.out.println(" | Positions evaled: " + posNum);
 		System.out.println(" | Positions pruned: " + pruneNum);
-		System.out.println(" | (\u001b[36m" + cMove + "\u001b[0m)");
+		System.out.println(" | (\u001b[36m" + cMove + "\u001b[0m)\n");
+		
 		MiniChess.move++;
 	}
 
@@ -159,7 +181,7 @@ public class Evaluator {
 	public static int miniMax(boolean maximizing, int depth, int alpha, int beta) throws MoveGeneratorException {
 		posNum++;
 		if (depth == 0)
-			return -getBoardValue(MiniChess.board);
+			return -PieceEvaluator.boardValue(MiniChess.board);
 		MoveList newMoves = MoveGenerator.generateLegalMoves(MiniChess.board);
 		
 		if (maximizing) {
@@ -193,48 +215,14 @@ public class Evaluator {
 		}
 	}
 
-	/* Get the total board value */
-	public static int getBoardValue(Board b) {
-		int value = 0;
-		for (Piece p : b.boardToArray()) {
-			value += getPieceValue(p);
-		}
-		return value;
-	}
-
-	/* Get the value for one piece */
-	public static int getPieceValue(Piece p) {
-		boolean side = false;
-		if (p.getPieceSide() == Side.WHITE)
-			side = true;
-
-		if (p.getPieceType() != null) {
-			switch (p.getPieceType()) {
-			default: return 0;
-			case PAWN:
-				return (side) ? 100 : -100;
-			case KNIGHT:
-				return (side) ? 300 : -300;
-			case BISHOP:
-				return (side) ? 325 : -325;
-			case ROOK:
-				return (side) ? 500 : -500;
-			case QUEEN:
-				return (side) ? 1000 : -1000;
-			case KING:
-				return (side) ? pInfinity : nInfinity;
-			}
-		} else return 0;
-	}
-
 	/* Functions for parser */
 	public static String getParam(char[] chars, int index) {
 		String command = "";
+		boolean parse = false;
 		for (int i = index + 1; i < chars.length; i++) {
-			if (chars[i] == '\n')
-				break;
-			else if (chars[i] != ' ')
-				command += chars[i];
+			if (chars[i] == '\n') break;
+			if(chars[i] != ' ') parse = true;
+			if(parse) command += chars[i];
 		}
 		return command;
 	}
