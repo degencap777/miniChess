@@ -47,9 +47,9 @@ public class MiniChess {
 			} catch (MoveGeneratorException e) {
 				System.out.println("Error generating moves.");
 			} 
-//			catch(Exception e) {
-//				System.out.println("Error, plase try again.");
-//			}
+			catch(Exception e) {
+				System.out.println("Error, plase try again.");
+			}
 		}
 	}
 
