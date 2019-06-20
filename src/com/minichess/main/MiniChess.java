@@ -7,7 +7,7 @@ import java.io.File;
 import com.github.bhlangonijr.chesslib.*;
 import com.github.bhlangonijr.chesslib.move.*;
 
-/* MiniChess v2.6
+/* MiniChess v2.6.5
  * 	MiniChess is a chess AI program that uses the minimax algorithm with alpha-beta pruning.
  *  You play as white, and MiniChess is black. Make your move by entering the two squares (e.g `>>f2f4`).
  *  Once entered, MiniChess will return it's decided move, in addition to the time (in milliseconds) it took,
@@ -46,9 +46,10 @@ public class MiniChess {
 				Evaluator.eval(input, depth);
 			} catch (MoveGeneratorException e) {
 				System.out.println("Error generating moves.");
-			} catch(Exception e) {
-				System.out.println("Error, plase try again.");
-			}
+			} 
+//			catch(Exception e) {
+//				System.out.println("Error, plase try again.");
+//			}
 		}
 	}
 
@@ -108,10 +109,7 @@ public class MiniChess {
 			System.out.println("Couldn't save board.");
 
 		FileWriter writer = new FileWriter(file);
-		Piece[] pieces = board.boardToArray();
-		for (int i = 0; i < pieces.length; i++)
-			if (i != pieces.length - 1)
-				writer.write(pieces[i].toString() + "\r\n");
+		writer.write(board.getFen() + "\n" + depth + "\n" + move);
 		writer.close();
 	}
 
@@ -122,9 +120,9 @@ public class MiniChess {
 		int index = 0;
 		board.clear();
 		while (sc.hasNextLine()) {
-			Piece piece = Piece.valueOf(sc.nextLine());
-			if (piece != Piece.NONE)
-				board.setPiece(piece, Square.squareAt(index));
+			if(index == 0) board.loadFromFen(sc.nextLine());
+			else if(index == 1) depth = sc.nextInt();
+			else if(index == 2) move = sc.nextInt();
 			index++;
 		}
 		sc.close();
