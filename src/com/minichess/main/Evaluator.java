@@ -38,7 +38,7 @@ public class Evaluator {
 		boolean nextSquare = false;
 		boolean isCommand = false;
 		Square[] squares = new Square[2];
-
+		
 		/* Parsing the input */
 		for (int i = 0; i < input.length; i++) {
 			token += input[i];
@@ -82,8 +82,8 @@ public class Evaluator {
 					}
 					break;
 				case "version":
-					System.out.println("MiniChess AI v2.6 Created 5/17/19\n\n" + "Credits:\n"
-							+ " | MiniChess v2.6 - Copyright (C) 2019 Ryan Danver\n"
+					System.out.println("MiniChess AI v2.6.5 Created 5/17/19\n\n" + "Credits:\n"
+							+ " | MiniChess v2.6.5 - Copyright (C) 2019 Ryan Danver\n"
 							+ " | chesslib - Copyright 2017 Ben-Hur Carlos Vieira Langoni Junior");
 					break;
 				case "cmds":
@@ -143,21 +143,23 @@ public class Evaluator {
 		long curTime = System.currentTimeMillis();
 		Move cMove = rootMiniMax(true, depth);
 		long elapsedTime = System.currentTimeMillis() - curTime;
-		MiniChess.board.doMove(cMove);
+		
+		if(cMove != null) MiniChess.board.doMove(cMove);
+		else return;
 		
 		if(printOnMove) MiniChess.printBoard();
 		System.out.println("\nmove: " + MiniChess.move);
-		System.out.println(" | Elapsed time: " + elapsedTime + "ms.");
-		System.out.println(" | Positions evaled: " + posNum);
-		System.out.println(" | Positions pruned: " + pruneNum);
+		System.out.print((MiniChess.board.isKingAttacked()) ? " | \u001b[31;1mYou're in check.\n\u001b[0m" : "");
+		System.out.println(" | Elapsed time: " + elapsedTime + "ms.\n" +
+						   " | Positions evaled: " + posNum + "\n" +
+						   " | Positions pruned: " + pruneNum);
 		System.out.println(" | (\u001b[36m" + cMove + "\u001b[0m)\n");
 		
 		MiniChess.move++;
 	}
 
-	/*
-	 * Minimax algorithm with alpha-beta pruning. For more information, go to
-	 * https://en.wikipedia.org/wiki/Minimax.
+	/* Minimax algorithm with alpha-beta pruning. 
+	 * 	For more information, go to https://en.wikipedia.org/wiki/Minimax.
 	 */
 
 	/* For the root node. */
